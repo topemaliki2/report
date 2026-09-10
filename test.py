@@ -36,42 +36,56 @@ st.title("📊 2023 Revised Budget Analysis Dashboard")
 st.markdown("---")
 st.markdown("### Comprehensive analysis of the 2023 Revised Budget data")
 
+# File upload section
+st.header("📁 Upload Excel File")
+st.markdown("Upload your Excel file to begin analysis. The file should contain budget data with multiple sheets.")
+
+uploaded_file = st.file_uploader(
+    "Choose an Excel file",
+    type=['xlsx', 'xls'],
+    help="Upload your budget Excel file (.xlsx or .xls)"
+)
+
 # Load data function
 @st.cache_data
-def load_budget_data():
+def load_budget_data(uploaded_file):
     try:
-        file_path = r"C:\Users\ALH MALIK TOPE\PycharmProjects\PythonProject\2023 Revised  Budget Workbook Template 7th June 2023. (22).xlsx"
-        
-        # Try to read the Excel file
-        xls = pd.ExcelFile(file_path)
-        st.success(f"✅ Successfully loaded Excel file with {len(xls.sheet_names)} sheets")
-        
-        # Display available sheets
-        st.info(f"Available sheets: {', '.join(xls.sheet_names)}")
-        
-        # Load all sheets into a dictionary
-        data_dict = {}
-        for sheet_name in xls.sheet_names:
-            try:
-                df = pd.read_excel(file_path, sheet_name=sheet_name)
-                data_dict[sheet_name] = df
-                st.info(f"📄 Sheet '{sheet_name}': {df.shape[0]} rows, {df.shape[1]} columns")
-            except Exception as e:
-                st.warning(f"⚠️ Could not load sheet '{sheet_name}': {str(e)}")
-        
-        return data_dict, xls.sheet_names
-    
-    except FileNotFoundError:
-        st.error("❌ Excel file not found. Please check the file path.")
-        return None, []
+        if uploaded_file is not None:
+            # Read the uploaded Excel file
+            xls = pd.ExcelFile(uploaded_file)
+            st.success(f"✅ Successfully loaded Excel file with {len(xls.sheet_names)} sheets")
+            
+            # Display available sheets
+            st.info(f"Available sheets: {', '.join(xls.sheet_names)}")
+            
+            # Load all sheets into a dictionary
+            data_dict = {}
+            for sheet_name in xls.sheet_names:
+                try:
+                    df = pd.read_excel(uploaded_file, sheet_name=sheet_name)
+                    data_dict[sheet_name] = df
+                    st.info(f"📄 Sheet '{sheet_name}': {df.shape[0]} rows, {df.shape[1]} columns")
+                except Exception as e:
+                    st.warning(f"⚠️ Could not load sheet '{sheet_name}': {str(e)}")
+            
+            return data_dict, xls.sheet_names
+        else:
+            return None, []
     except Exception as e:
         st.error(f"❌ Error loading Excel file: {str(e)}")
         return None, []
 
-# Load the data
-data_dict, sheet_names = load_budget_data()
+# Load the data only if file is uploaded
+data_dict = None
+sheet_names = []
 
-if data_dict:
+if uploaded_file is not None:
+    data_dict, sheet_names = load_budget_data(uploaded_file)
+else:
+    st.info("👆 Please upload an Excel file to begin analysis.")
+    st.warning("⚠️ No file uploaded. The dashboard requires an Excel file to function.")
+
+if data_dict and uploaded_file is not None:
     st.markdown("---")
     
     # Sidebar for navigation
@@ -111,17 +125,17 @@ if data_dict:
                 'Null Count': df.isnull().sum(),
                 'Unique Values': df.nunique()
             })
-            st.dataframe(col_info, use_container_width=True)
+            st.dataframe(col_info, width='stretch')
             
             st.markdown("---")
             
             # Display first few rows
             st.subheader("First 10 Rows")
-            st.dataframe(df.head(10), use_container_width=True)
+            st.dataframe(df.head(10), width='stretch')
             
             # Display last few rows
             st.subheader("Last 10 Rows")
-            st.dataframe(df.tail(10), use_container_width=True)
+            st.dataframe(df.tail(10), width='stretch')
     
     # Statistical Summary
     elif analysis_option == "Statistical Summary":
@@ -137,7 +151,7 @@ if data_dict:
             
             if numeric_cols:
                 st.subheader("Numeric Columns Statistics")
-                st.dataframe(df[numeric_cols].describe(), use_container_width=True)
+                st.dataframe(df[numeric_cols].describe(), width='stretch')
                 
                 # Additional statistics
                 st.subheader("Additional Statistics")
@@ -150,7 +164,7 @@ if data_dict:
                     'Skewness': df[numeric_cols].skew(),
                     'Kurtosis': df[numeric_cols].kurtosis()
                 })
-                st.dataframe(stats_df, use_container_width=True)
+                st.dataframe(stats_df, width='stretch')
             else:
                 st.warning("⚠️ No numeric columns found in this sheet")
             
@@ -304,7 +318,7 @@ if data_dict:
                         })
                     
                     comparison_df = pd.DataFrame(comparison_data)
-                    st.dataframe(comparison_df, use_container_width=True)
+                    st.dataframe(comparison_df, width='stretch')
                     
                     # Visualization of comparison
                     if len(common_numeric) > 0:
@@ -404,8 +418,8 @@ if data_dict:
                 st.success(f"✅ Data exported to {excel_filename}")
 
 else:
-    st.error("❌ Could not load the budget data. Please check the file path and try again.")
-    st.info("Make sure the file '2023 Revised  Budget Workbook Template 7th June 2023. (22).xlsx' exists in the project directory.")
+    st.error("❌ No data loaded. Please upload an Excel file to begin analysis.")
+    st.info("💡 Tip: Upload your budget Excel file using the file uploader above.")
 
 # Footer
 st.markdown("---")
